@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8" />
+  <title>MP4 → GIF Converter (Local, CDN FFmpeg)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <!-- Font Awesome (ícones) -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+  <style>
+    /* ==== CSS (compacto, baseado no teu design) ==== */
+    :root{
+      --color-bg:#050509;--color-bg-elevated:#111322;--color-bg-elevated-soft:#181a2a;
+      --color-border-subtle:#2a2c3d;--color-primary:#4e54c8;--color-secondary:#03dac5;
+      --color-danger:#ff5252;--color-text:#f4f5ff;--color-text-muted:#9ca0c3;
+      --radius-lg:18px;--radius-md:12px;--radius-sm:8px;--shadow-soft:0 18px 45px rgba(0,0,0,.65)
+    }
+    *{box-sizing:border-box}html,body{height:100%;margin:0;padding:0;background:radial-gradient(circle at top,#151633 0,#050509 55%);color:var(--color-text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif}
+    body{display:flex;align-items:stretch;justify-content:center;padding:18px}
+    .app{width:100%;max-width:1180px;display:flex;flex-direction:column;gap:10px}
+    .app-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:999px;background:linear-gradient(120deg,rgba(78,84,200,.1),rgba(3,218,197,.04));border:1px solid rgba(255,255,255,.05);backdrop-filter:blur(18px);box-shadow:0 18px 36px rgba(6,7,30,.7)}
+    .logo-title{display:flex;align-items:center;gap:10px}
+    .logo-pulse{width:38px;height:38px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 20%,#03dac5 0,#4e54c8 45%,#050509 100%);color:#fff;font-size:20px;box-shadow:0 0 18px rgba(78,84,200,.7);animation:pulse 2200ms infinite}
+    .header-text{display:flex;flex-direction:column}
+    .title{font-size:17px;margin:0}
+    .subtitle{font-size:12px;color:var(--color-text-muted);margin:0}
+    .btn{border:none;border-radius:999px;cursor:pointer;font-size:13px;padding:8px 14px;display:inline-flex;align-items:center;gap:8px}
+    .btn-ghost{background:transparent;color:var(--color-text-muted)}
+    .btn-primary{background:linear-gradient(135deg,#4e54c8,#6366f1);color:#fff}
+    .btn-secondary{background:rgba(3,218,197,.08);color:var(--color-secondary);border:1px solid rgba(3,218,197,.45)}
+    .btn-sm{padding:6px 10px;font-size:12px}
+    .btn-icon{background:transparent;color:var(--color-text-muted);padding:4px;border-radius:999px}
+    .app-main{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:12px}
+    .panel{background:rgba(7,9,25,.96);border-radius:var(--radius-lg);box-shadow:var(--shadow-soft);border:1px solid rgba(255,255,255,.03);padding:12px;display:flex;flex-direction:column;gap:10px;backdrop-filter:blur(18px)}
+    .drop-zone{position:relative;border-radius:var(--radius-md);border:1px dashed rgba(148,163,255,.6);background:radial-gradient(circle at top,rgba(78,84,200,.25),rgba(5,5,9,.95) 50%);padding:16px 10px;cursor:pointer;overflow:hidden}
+    .drop-zone.drag-over{border-style:solid;border-color:var(--color-secondary);box-shadow:0 0 0 1px var(--color-secondary),0 20px 40px rgba(3,218,197,.55);background:radial-gradient(circle at top,rgba(3,218,197,.24),#050509 56%)}
+    .drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+    .drop-zone-inner{text-align:center;pointer-events:none}
+    .drop-icon{font-size:30px;color:var(--color-secondary);margin-bottom:6px;filter:drop-shadow(0 0 16px rgba(3,218,197,.7))}
+    .drop-title{font-size:13px;margin:0 0 2px}.drop-subtitle{font-size:11px;margin:0 0 4px;color:var(--color-text-muted)}.file-hint{font-size:10px;color:rgba(156,160,195,.9)}
+    .panel-section{background:radial-gradient(circle at top left,rgba(78,84,200,.19),transparent 55%),radial-gradient(circle at bottom right,rgba(3,218,197,.12),transparent 45%),var(--color-bg-elevated);border-radius:var(--radius-md);border:1px solid var(--color-border-subtle);padding:10px;display:flex;flex-direction:column;gap:8px}
+    .panel-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .video-list{list-style:none;margin:0;padding:0;max-height:210px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+    .video-item{display:grid;grid-template-columns:minmax(0,1.7fr) auto;gap:6px;align-items:center;background:var(--color-bg-elevated-soft);border-radius:var(--radius-sm);padding:8px;border:1px solid rgba(255,255,255,.03)}
+    .video-name{font-size:12px;margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .video-meta{font-size:10px;color:var(--color-text-muted);display:flex;align-items:center;gap:6px}
+    .video-actions{display:flex;align-items:center;gap:6px}
+    .results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;max-height:220px;overflow:auto}
+    .result-card{background:radial-gradient(circle at top,rgba(78,84,200,.32),#0b0d19 52%);border-radius:var(--radius-sm);padding:6px;border:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:4px}
+    .result-thumb{position:relative;border-radius:9px;overflow:hidden;background:#050509;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center}
+    .result-thumb img{max-width:100%;max-height:100%;display:block}
+    .overlay{position:fixed;inset:0;background:radial-gradient(circle at top,rgba(78,84,200,.25),rgba(0,0,0,.9));backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;z-index:40}
+    .overlay.hidden{display:none}
+    .overlay-content{background:rgba(10,11,30,.95);padding:18px 20px;border-radius:999px;border:1px solid rgba(148,163,255,.4);box-shadow:0 22px 44px rgba(0,0,0,.85);display:flex;align-items:center;gap:12px}
+    .spinner{width:26px;height:26px;border-radius:50%;border:3px solid rgba(148,163,255,.28);border-top-color:var(--color-secondary);animation:spin .7s linear infinite}
+    .preview-overlay{position:fixed;inset:0;background:radial-gradient(circle at top,rgba(78,84,200,.25),rgba(0,0,0,.9));backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;z-index:50}
+    .preview-overlay.hidden{display:none}
+    .preview-dialog{width:min(480px,94vw);background:#050509;border-radius:18px;border:1px solid rgba(148,163,255,.6);box-shadow:0 26px 60px rgba(0,0,0,.95);overflow:hidden}
+    .preview-header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:linear-gradient(120deg,rgba(78,84,200,.9),rgba(3,218,197,.8))}
+    .preview-body{padding:10px;background:radial-gradient(circle at top,rgba(78,84,200,.2),#050509 70%)}
+    video{width:100%;border-radius:12px;background:#020308}
+    .empty-message{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--color-text-muted);padding:12px 8px;text-align:center}
+    @keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 16px rgba(78,84,200,.9)}50%{transform:scale(1.06);box-shadow:0 0 30px rgba(3,218,197,.9)}}
+    @keyframes spin{to{transform:rotate(360deg)}}@media(max-width:800px){.app-main{grid-template-columns:1fr}.subtitle{display:none}}
+  </style>
+</head>
+<body>
+  <div class="app" id="appRoot">
+    <header class="app-header">
+      <div class="logo-title">
+        <div class="logo-pulse"><i class="fa-solid fa-film"></i></div>
+        <div class="header-text">
+          <h1 class="title">MP4 → GIF Converter</h1>
+          <p class="subtitle">Converte vídeos MP4 em GIFs animados — direto no browser.</p>
+        </div>
+      </div>
+      <button id="resetBtn" class="btn btn-ghost" title="Reset"><i class="fa-solid fa-arrow-rotate-right"></i></button>
+    </header>
+
+    <main class="app-main">
+      <section class="panel panel-left">
+        <div id="dropZone" class="drop-zone" title="Clique ou arraste ficheiros">
+          <input id="fileInput" type="file" accept="video/mp4" multiple>
+          <div class="drop-zone-inner">
+            <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
+            <p class="drop-title">Arraste e largue os seus vídeos MP4 aqui</p>
+            <p class="drop-subtitle">ou toque para selecionar ficheiros</p>
+            <span class="file-hint">Apenas .mp4 (múltiplos permitidos)</span>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-header">
+            <h2><i class="fa-solid fa-list"></i> Vídeos selecionados</h2>
+            <span class="badge" id="videoCount">0</span>
+          </div>
+          <ul id="videoList" class="video-list">
+            <li class="empty-message"><i class="fa-regular fa-circle-play"></i><span>Nenhum vídeo selecionado.</span></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="panel panel-right">
+        <div class="panel-section">
+          <div class="panel-header">
+            <h2><i class="fa-solid fa-sliders"></i> Opções de conversão</h2>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+            <div style="min-width:150px">
+              <div style="font-size:12px;color:var(--color-text-muted)">Formato de saída</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><i class="fa-solid fa-file-image"></i><span>GIF Animado</span></div>
+            </div>
+            <div style="min-width:150px">
+              <div style="font-size:12px;color:var(--color-text-muted)">Preset</div>
+              <div style="margin-top:6px">FPS: <strong>12</strong> · Largura: <strong>480px</strong></div>
+            </div>
+          </div>
+
+          <button id="convertBtn" class="btn btn-primary full-width" disabled><i class="fa-solid fa-wand-magic-sparkles"></i> Converter para GIF</button>
+        </div>
+
+        <div class="panel-section results-section" style="margin-top:12px">
+          <div class="panel-header">
+            <h2><i class="fa-solid fa-images"></i> Resultados</h2>
+            <button id="downloadAllBtn" class="btn btn-secondary btn-sm" disabled><i class="fa-solid fa-file-zipper"></i> Download ZIP</button>
+          </div>
+          <div id="resultsGrid" class="results-grid" style="margin-top:8px">
+            <div class="empty-message"><i class="fa-regular fa-image"></i><span>Aguardando conversão.</span></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay" class="overlay hidden" style="display:none;position:fixed;inset:0;z-index:9999">
+    <div class="overlay-content">
+      <div class="spinner"></div>
+      <p id="loadingText">A preparar o conversor...</p>
+    </div>
+  </div>
+
+  <!-- Preview overlay -->
+  <div id="previewOverlay" class="preview-overlay hidden" style="display:none;position:fixed;inset:0;z-index:10000">
+    <div class="preview-dialog">
+      <div class="preview-header">
+        <div class="preview-title"><i class="fa-regular fa-circle-play"></i> <span id="previewFilename"></span></div>
+        <button id="closePreviewBtn" class="btn-icon" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="preview-body">
+        <video id="previewVideo" controls></video>
+      </div>
+    </div>
+  </div>
+
+  <!-- External libs (CDN) -->
+  <!-- FFmpeg UMD (expor­ta global FFmpeg) -->
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/ffmpeg.min.js"></script>
+  <!-- JSZip UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <script>
+    /* ==== JavaScript: funcionalidade completa (usa FFmpeg global e JSZip global) ==== */
+
+    // Estado
+    const state = {
+      files: [],
+      gifs: [],
+      ffmpeg: null,
+      ffmpegLoaded: false,
+      converting: false
+    };
+
+    // Elementos
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const videoList = document.getElementById('videoList');
+    const videoCount = document.getElementById('videoCount');
+    const convertBtn = document.getElementById('convertBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const resultsGrid = document.getElementById('resultsGrid');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loadingText = document.getElementById('loadingText');
+    const previewOverlay = document.getElementById('previewOverlay');
+    const previewVideo = document.getElementById('previewVideo');
+    const previewFilename = document.getElementById('previewFilename');
+    const closePreviewBtn = document.getElementById('closePreviewBtn');
+
+    // Helpers
+    const formatBytes = (bytes) => {
+      if (!bytes && bytes !== 0) return '-';
+      const sizes = ['B','KB','MB','GB'];
+      if (bytes === 0) return '0 B';
+      const i = Math.floor(Math.log(bytes)/Math.log(1024));
+      const val = bytes / Math.pow(1024, i);
+      return \`\${val.toFixed(i===0?0:1)} \${sizes[i]}\`;
+    };
+
+    const showLoading = (txt='A processar...') => {
+      loadingText.textContent = txt;
+      loadingOverlay.style.display = 'flex';
+    };
+    const hideLoading = () => { loadingOverlay.style.display = 'none'; };
+
+    // Inicializar FFmpeg (usando global FFmpeg fornecido pelo UMD)
+    async function ensureFFmpeg() {
+      if (state.ffmpegLoaded) return;
+      if (!window.FFmpeg || !FFmpeg.createFFmpeg) {
+        throw new Error('FFmpeg não encontrado no global. Verifica a CDN.');
+      }
+      if (!state.ffmpeg) {
+        // corePath must point to ffmpeg-core.js (WASM loader)
+        state.ffmpeg = FFmpeg.createFFmpeg({
+          corePath: 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/ffmpeg-core.js',
+          log: false
+        });
+      }
+      showLoading('A carregar o motor de conversão (FFmpeg)...');
+      await state.ffmpeg.load(); // aqui pode dar erro se não houver ligação
+      state.ffmpegLoaded = true;
+      hideLoading();
+    }
+
+    // Adicionar ficheiros
+    function addFiles(fileList) {
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+      const valid = files.filter(f => f.type === 'video/mp4' || f.name.toLowerCase().endsWith('.mp4'));
+      const invalidCount = files.length - valid.length;
+      valid.forEach(file => {
+        const id = \`\${file.name}-\${file.size}-\${file.lastModified}-\${Math.random().toString(36).slice(2)}\`;
+        const previewUrl = URL.createObjectURL(file);
+        state.files.push({ id, file, name: file.name, size: file.size, previewUrl });
+      });
+      videoCount.textContent = String(state.files.length);
+      convertBtn.disabled = state.files.length === 0;
+      renderVideoList();
+      if (invalidCount > 0) {
+        showLoading(\`\${invalidCount} ficheiro(s) ignorado(s). Apenas .mp4 suportado.\`);
+        setTimeout(hideLoading, 1500);
+      }
+    }
+
+    fileInput.addEventListener('change', (e) => {
+      addFiles(e.target.files);
+      fileInput.value = '';
+    });
+
+    // Drag & drop
+    ['dragenter','dragover'].forEach(ev => {
+      dropZone.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag-over'); });
+    });
+    ['dragleave','drop'].forEach(ev => {
+      dropZone.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over'); });
+    });
+    dropZone.addEventListener('drop', (e) => {
+      const files = e.dataTransfer?.files;
+      if (files && files.length) addFiles(files);
+    });
+
+    // Render lista de vídeos
+    function renderVideoList() {
+      videoList.innerHTML = '';
+      if (!state.files.length) {
+        videoList.innerHTML = '<li class="empty-message"><i class="fa-regular fa-circle-play"></i><span>Nenhum vídeo selecionado.</span></li>';
+        return;
+      }
+      state.files.forEach(entry => {
+        const li = document.createElement('li');
+        li.className = 'video-item';
+
+        const main = document.createElement('div'); main.className='video-main';
+        const name = document.createElement('p'); name.className='video-name'; name.textContent = entry.name;
+        const meta = document.createElement('div'); meta.className='video-meta'; meta.innerHTML = \`<span>\${formatBytes(entry.size)}</span><span> • MP4</span>\`;
+        main.appendChild(name); main.appendChild(meta);
+
+        const actions = document.createElement('div'); actions.className='video-actions';
+        const previewBtn = document.createElement('button'); previewBtn.className='btn-secondary btn-sm'; previewBtn.innerHTML='<i class="fa-regular fa-circle-play"></i><span>Preview</span>';
+        previewBtn.addEventListener('click', () => openPreview(entry));
+        const removeBtn = document.createElement('button'); removeBtn.className='btn-ghost btn-sm'; removeBtn.innerHTML='<i class="fa-solid fa-trash-can"></i>';
+        removeBtn.style.color = 'var(--color-danger)';
+        removeBtn.addEventListener('click', () => removeFile(entry.id));
+        actions.appendChild(previewBtn); actions.appendChild(removeBtn);
+
+        li.appendChild(main); li.appendChild(actions); videoList.appendChild(li);
+      });
+    }
+
+    function removeFile(id) {
+      const idx = state.files.findIndex(f=>f.id===id);
+      if (idx>=0) {
+        URL.revokeObjectURL(state.files[idx].previewUrl);
+        state.files.splice(idx,1);
+      }
+      videoCount.textContent = String(state.files.length);
+      convertBtn.disabled = state.files.length === 0;
+      renderVideoList();
+    }
+
+    // Preview
+    function openPreview(entry) {
+      previewFilename.textContent = entry.name;
+      previewVideo.src = entry.previewUrl;
+      previewVideo.currentTime = 0;
+      previewVideo.play().catch(()=>{});
+      previewOverlay.style.display='flex';
+    }
+    function closePreview() {
+      previewVideo.pause();
+      previewVideo.removeAttribute('src');
+      previewOverlay.style.display='none';
+    }
+    closePreviewBtn.addEventListener('click', closePreview);
+    previewOverlay.addEventListener('click', (e)=> { if (e.target===previewOverlay) closePreview(); });
+
+    // Conversão
+    async function convertAll() {
+      if (!state.files.length || state.converting) return;
+      state.converting = true;
+      convertBtn.disabled = true;
+      downloadAllBtn.disabled = true;
+
+      try {
+        await ensureFFmpeg();
+      } catch (err) {
+        console.error('FFmpeg load error', err);
+        showLoading('Erro ao carregar FFmpeg. Verifique a sua ligação e recarregue a página.');
+        setTimeout(hideLoading, 2600);
+        state.converting = false;
+        convertBtn.disabled = state.files.length === 0;
+        return;
+      }
+
+      // limpar resultados antigos
+      state.gifs.forEach(g => URL.revokeObjectURL(g.url));
+      state.gifs = [];
+      renderResults();
+
+      showLoading('A converter vídeos para GIF...');
+
+      for (let i=0;i<state.files.length;i++) {
+        const entry = state.files[i];
+        loadingText.textContent = \`A converter (\${i+1}/\${state.files.length}) - \${entry.name}\`;
+        try {
+          const gifInfo = await convertSingle(entry.file, entry.name);
+          state.gifs.push(gifInfo);
+          renderResults();
+        } catch (err) {
+          console.error('Erro a converter', entry.name, err);
+        }
+      }
+
+      hideLoading();
+      state.converting = false;
+      convertBtn.disabled = state.files.length === 0;
+      downloadAllBtn.disabled = state.gifs.length === 0;
+    }
+
+    async function convertSingle(file, filename) {
+      const ffmpeg = state.ffmpeg;
+      const inputName = 'input.mp4';
+      const outputName = 'output.gif';
+
+      // fetchFile helper do FFmpeg global
+      const ffFetch = FFmpeg.fetchFile || ((f) => f.arrayBuffer().then(b => new Uint8Array(b)));
+      ffmpeg.FS('writeFile', inputName, await ffFetch(file));
+
+      // comando: fps=12, scale 480 width, max duration 20s (ajustável)
+      await ffmpeg.run(
+        '-i', inputName,
+        '-vf', 'fps=12,scale=480:-1:flags=lanczos',
+        '-t', '20',
+        '-y',
+        outputName
+      );
+
+      const data = ffmpeg.FS('readFile', outputName);
+      // cleanup
+      try { ffmpeg.FS('unlink', inputName); } catch(e){}
+      try { ffmpeg.FS('unlink', outputName); } catch(e){}
+
+      const blob = new Blob([data.buffer], { type: 'image/gif' });
+      const url = URL.createObjectURL(blob);
+      const cleanName = (filename.replace(/\.[^/.]+$/, '') || ('video-' + Date.now().toString(36)));
+      return { name: cleanName + '.gif', size: blob.size, blob, url };
+    }
+
+    // Render results
+    function renderResults() {
+      resultsGrid.innerHTML = '';
+      if (!state.gifs.length) {
+        resultsGrid.innerHTML = '<div class="empty-message"><i class="fa-regular fa-image"></i><span>Aguardando conversão.</span></div>';
+        downloadAllBtn.disabled = true;
+        return;
+      }
+      state.gifs.forEach(gif => {
+        const card = document.createElement('div'); card.className='result-card';
+        const thumb = document.createElement('div'); thumb.className='result-thumb';
+        const img = document.createElement('img'); img.src = gif.url; img.alt = gif.name;
+        thumb.appendChild(img);
+
+        const meta = document.createElement('div'); meta.className='result-meta';
+        const name = document.createElement('div'); name.className='result-name'; name.textContent = gif.name;
+        const size = document.createElement('div'); size.className='result-size'; size.textContent = formatBytes(gif.size);
+        meta.appendChild(name); meta.appendChild(size);
+
+        const actions = document.createElement('div'); actions.className='result-actions';
+        const downloadBtn = document.createElement('button'); downloadBtn.className='btn-secondary btn-sm';
+        downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i><span>GIF</span>';
+        downloadBtn.addEventListener('click', ()=> downloadSingle(gif));
+        actions.appendChild(downloadBtn);
+
+        card.appendChild(thumb); card.appendChild(meta); card.appendChild(actions);
+        resultsGrid.appendChild(card);
+      });
+      downloadAllBtn.disabled = false;
+    }
+
+    function downloadSingle(gif) {
+      const a = document.createElement('a');
+      a.href = gif.url;
+      a.download = gif.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // ZIP download (JSZip global)
+    async function downloadAll() {
+      if (!state.gifs.length) return;
+      const zip = new JSZip();
+      const folder = zip.folder('gifs') || zip;
+      state.gifs.forEach(g => folder.file(g.name, g.blob));
+      showLoading('A preparar ZIP para download...');
+      const content = await zip.generateAsync({ type: 'blob' });
+      hideLoading();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(content);
+      a.download = 'gifs-convertidos.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // Eventos
+    convertBtn.addEventListener('click', () => {
+      convertAll().catch(err => { console.error(err); hideLoading(); state.converting=false; convertBtn.disabled = state.files.length===0; });
+    });
+    downloadAllBtn.addEventListener('click', () => {
+      downloadAll().catch(err => { console.error(err); hideLoading(); });
+    });
+    resetBtn.addEventListener('click', () => {
+      if (!confirm('Tem a certeza que deseja resetar a aplicação? Todos os ficheiros serão removidos.')) return;
+      state.files.forEach(f => URL.revokeObjectURL(f.previewUrl));
+      state.gifs.forEach(g => URL.revokeObjectURL(g.url));
+      state.files = []; state.gifs = []; state.converting=false;
+      videoCount.textContent='0'; convertBtn.disabled=true; downloadAllBtn.disabled=true;
+      renderVideoList(); renderResults();
+      // limpar preview
+      previewVideo.pause(); previewVideo.removeAttribute('src'); previewOverlay.style.display='none';
+    });
+
+    // init
+    renderVideoList();
+    renderResults();
+
+    // quick note: hide overlay on click outside (already handled)
+  </script>
+</body>
+</html>
